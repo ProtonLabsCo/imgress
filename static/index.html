@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <title>Imgress</title>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <style>
+    .btn,
+    .filec,
+    .compr-level {
+      border: 2px solid gray;
+      color: gray;
+      background-color: white;
+      padding: 10px 25px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .main1 {
+      width: 80%;
+      margin: 15px auto;
+      text-align: center;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    form {
+      text-align: center;
+      padding: 15px;
+      background-color: rgb(105, 103, 70);
+      color: white;
+      border-radius: 10px;
+    }
+
+    footer {
+      text-align: center;
+      background-color: rgb(105, 103, 70);
+      color: white;
+      width: 80%;
+      margin: 0 auto;
+      border-radius: 10px;
+    }
+
+    label {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    hr {
+      width: 50%;
+    }
+
+    h4 {
+      color: rgb(0, 0, 0);
+    }
+  </style>
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+</head>
+
+<body>
+  <div class="main1">
+    <form method="post" enctype="multipart/form-data" id="form" action="/">
+      <h2>You can compress up to 5 images with mixumum size of 20 MB each!</h3>
+        {{if .message}}<h4>{{.message}} -> <a href="http://localhost:4000/">Refresh!</a></h4>{{end}}
+        <div>
+          <label>Upload Images</label>
+          <div>
+            <hr>
+            <input class="filec" type="file" name="image1" accept="image/png,image/webp,image/jpeg,image/jpg">
+            {{if .hasLink1}}-><a href={{.DownloadLink1}} download>Download</a>{{end}}
+            <hr>
+            <input class="filec" type="file" name="image2" accept="image/png,image/webp,image/jpeg,image/jpg">
+            {{if .hasLink2}}-><a href={{.DownloadLink2}} download>Download</a>{{end}}
+            <hr>
+            <input class="filec" type="file" name="image3" accept="image/png,image/webp,image/jpeg,image/jpg">
+            {{if .hasLink3}}-><a href={{.DownloadLink3}} download>Download</a>{{end}}
+            <hr>
+            <input class="filec" type="file" name="image4" accept="image/png,image/webp,image/jpeg,image/jpg">
+            {{if .hasLink4}}-><a href={{.DownloadLink4}} download>Download</a>{{end}}
+            <hr>
+            <input class="filec" type="file" name="image5" accept="image/png,image/webp,image/jpeg,image/jpg">
+            {{if .hasLink5}}-><a href={{.DownloadLink5}} download>Download</a>{{end}}
+            <hr>
+          </div>
+          <div>
+            <label for="compr-level">Choose a compression level:</label>
+            <select class="compr-level" id="compr-level" name="compr-level">
+              <option value="20" selected>High: 80%</option>
+              <option value="50">Moderate: 50%</option>
+              <option value="80">Low: 20%</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <hr>
+          <div class="h-captcha" data-sitekey="843fc47d-522f-45d7-a5d0-2da799ee81df"></div>
+          <button type="submit" name="upload" value="upload" id="upload" class="btn">Compress</button>
+        </div>
+    </form>
+  </div>
+
+  <footer>
+    <h3>We Use Middle-Out Compression Algorithm ;)</h3>
+    <h2><a href="https://www.protonlabs.dev">ProtonLabs</a></h2>
+  </footer>
+</body>
+
+</html>
