@@ -1,5 +1,4 @@
-* warn about removal of files in every 5 minutes
-* add cloudflare robot captcha
+* create a intermediary page for "uploaded"
 * serve over https, with lets encrypt
 * dockerize the app and use k8s
 * use rabbitmq to send images to be compressed to compressor service
