@@ -52,7 +52,10 @@ func handleFileupload(c *fiber.Ctx) error {
 		return err
 	}
 
-	HandleCaptcha(form.Value["h-captcha-response"][0])
+	hcaptchaPass := HandleCaptcha(form.Value["h-captcha-response"][0])
+	if !hcaptchaPass {
+		panic("Please, solve hCaptcha puzzle!")
+	}
 
 	levels := form.Value["compr-level"][0]
 	compressionLevel, err := strconv.Atoi(levels) // check if it is in (20, 50, 80)
