@@ -3,6 +3,7 @@ module imgress
 go 1.17
 
 require (
+	github.com/aws/aws-sdk-go v1.44.119
 	github.com/gofiber/fiber/v2 v2.38.1
 	github.com/gofiber/template v1.7.1
 	github.com/google/uuid v1.3.0
@@ -13,6 +14,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.15.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.40.0 // indirect

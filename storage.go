@@ -1,11 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -14,35 +12,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func CleanUp() {
-	dirname := "./images/"
-
-	for {
-		files, err := ioutil.ReadDir(dirname)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, file := range files {
-			fileInfo, err := os.Stat(dirname + file.Name())
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			if time.Now().Unix()-fileInfo.ModTime().Unix() > 300 {
-				os.Remove(dirname + file.Name())
-				deleteFromWasabiS3(file.Name())
-			}
-		}
-
-		// check for 5 minutes old files in every one minute
-		time.Sleep(60 * time.Second)
-	}
-}
-
-func deleteFromWasabiS3(filename string) error {
+func UploadToWasabiS3(compressedBuffer []byte, filename string) (string, error) {
 	err := godotenv.Load()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	s3Endpoint := os.Getenv("WASABI_S3_ENDPOINT")
@@ -67,24 +40,26 @@ func deleteFromWasabiS3(filename string) error {
 	// check if the session was created correctly.
 	if err != nil {
 		fmt.Println(err)
+		return "", err
 	}
 
 	// create a s3 client session
 	s3Client := s3.New(goSession)
 
 	// create put object input
-	deleteObjectInput := &s3.DeleteObjectInput{
+	putObjectInput := &s3.PutObjectInput{
+		Body:   bytes.NewReader(compressedBuffer),
 		Bucket: aws.String(s3BucketName),
 		Key:    aws.String(filename),
 	}
-	// get file
-	_, err = s3Client.DeleteObject(deleteObjectInput)
 
-	// print if there is an error
+	// upload file
+	_, err = s3Client.PutObject(putObjectInput)
 	if err != nil {
-		fmt.Println(err.Error())
-		return err
+		fmt.Println(err)
+		return "", err
 	}
 
-	return nil
+	linkToS3 := s3Endpoint + "/" + s3BucketName + "/" + filename
+	return linkToS3, err
 }

@@ -17,7 +17,9 @@ func main() {
 	runtime.GOMAXPROCS(4)
 
 	// start a cleanup cron-job
-	go CleanUp()
+	if !fiber.IsChild() {
+		go CleanUp()
+	}
 
 	engine := html.New("./static", ".html")
 
@@ -91,7 +93,7 @@ func handleFileupload(c *fiber.Ctx) error {
 		}
 		afterSize += result.afterSize
 		if loc, ok := imageLocs[result.filename[9:]]; ok {
-			dlLinks[loc-1] = "http://localhost:4000/images/" + result.filename
+			dlLinks[loc-1] = result.fileLink
 		}
 	}
 
