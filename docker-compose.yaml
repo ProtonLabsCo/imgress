@@ -1,0 +1,74 @@
+version: "3.7"
+
+services:
+  imgress-web-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: imgress-web-dev
+    ports:
+      - 4000:4000
+      - 2345:2345
+    depends_on:
+      - imgress-db
+    volumes:
+      - ./:/app:rw,delegated
+    networks:
+      - imgress-network
+
+  # imgress-web-prod:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     target: prod
+  #   container_name: imgress-web-prod
+  #   ports:
+  #     - 4000:8080
+  #   depends_on:
+  #     - imgress-db
+  #     - imgress-mq
+  #   volumes:
+  #     - ./:/app #:rw,delegated
+  #   networks:
+  #     - imgress-network
+
+  # imgress-mq:
+  #   image: rabbitmq:3-management-alpine
+  #   container_name: imgress-mq
+  #   ports:
+  #     - 5672:5672   # for sender and consumer connections
+  #     - 15672:15672 # for serve RabbitMQ GUI
+  #   environment:
+  #     RABBITMQ_ERLANG_COOKIE:
+  #     RABBITMQ_DEFAULT_VHOST: /
+  #     RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+  #     RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+  #   volumes:
+  #     - ./dev-rabbitmq/data/:/var/lib/rabbitmq
+  #     - ./dev-rabbitmq/log/:/var/log/rabbitmq
+  #   networks:
+  #     - imgress-network
+  #   restart: always
+
+  imgress-db:
+    container_name: imgress-db
+    image: postgres
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - DATABASE_HOST=${DB_HOST}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - imgress-network
+
+volumes:
+  postgres-data:
+
+networks:
+  imgress-network:
+    name: imgress-network

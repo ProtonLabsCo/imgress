@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
+	"imgress/database"
 	"os"
 	"time"
 
@@ -15,26 +14,19 @@ import (
 )
 
 func CleanUp() {
-	dirname := "./images/"
+	// select links from db undeleted images older than 5mins
+	var images []database.Image
 
 	for {
-		files, err := ioutil.ReadDir(dirname)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, file := range files {
-			fileInfo, err := os.Stat(dirname + file.Name())
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			if time.Now().Unix()-fileInfo.ModTime().Unix() > 300 {
-				os.Remove(dirname + file.Name())
-				deleteFromWasabiS3(file.Name())
-			}
+		last5mins := time.Now().Add(-time.Minute * 5)
+		database.GDB.Where("created_at < ? AND is_deleted = false", last5mins).Find(&images)
+		for _, image := range images {
+			deleteFromWasabiS3(image.ImageName)
+			// update db row as deleted
+			database.GDB.Model(&image).Update("is_deleted", true)
 		}
 
-		// check for 5 minutes old files in every one minute
+		// check for 5-minutes-old files in every one minute
 		time.Sleep(60 * time.Second)
 	}
 }

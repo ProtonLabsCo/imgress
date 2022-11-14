@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"imgress/database"
 	"log"
 	"mime/multipart"
 	"runtime"
@@ -10,9 +11,28 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/template/html"
+	"gorm.io/gorm"
 )
 
+type custom_handler struct {
+	DB *gorm.DB
+}
+
+func newHandler(db *gorm.DB) custom_handler {
+	return custom_handler{db}
+}
+
+func init() {
+	err := database.ConnectDB()
+	if err != nil {
+		panic(err)
+	}
+	database.GDB.AutoMigrate(&database.Image{})
+}
+
 func main() {
+	hndlr := newHandler(database.GDB)
+
 	// 4 threads/childs max
 	runtime.GOMAXPROCS(4)
 
@@ -42,13 +62,13 @@ func main() {
 	})
 
 	// handle image uploading using post request
-	app.Post("/", handleFileupload)
+	app.Post("/", hndlr.handleFileupload)
 
 	// start dev server on port 4000
 	log.Fatal(app.Listen(":4000"))
 }
 
-func handleFileupload(c *fiber.Ctx) error {
+func (hdlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
 	if err != nil {
 		return err
@@ -76,30 +96,47 @@ func handleFileupload(c *fiber.Ctx) error {
 		}
 	}
 
-	var beforeSize int64 = 0
-	var afterSize int64 = 0
+	beforeSize := []uint{0, 0, 0, 0, 0}
+	var afterSizeSum uint = 0
+	var beforeSizeSum uint = 0
 	returnChan := make(chan ReturnVal, len(files))
-	for _, file := range files {
-		beforeSize += file.Size
+	for i, file := range files {
+		beforeSize[i] = uint(file.Size)
+		beforeSizeSum += uint(file.Size)
 		go ValidateAndProcess(file, compressionLevel, returnChan)
 	}
 
 	dlLinks := []string{"", "", "", "", ""}
+	var images []database.Image
 	for i := 0; i < len(files); i++ {
 		result := <-returnChan
 		// stop if there is any error
 		if result.statusCode != 201 {
 			return c.JSON(fiber.Map{"status": result.statusCode, "message": result.statusMsg})
 		}
-		afterSize += result.afterSize
-		if loc, ok := imageLocs[result.filename[9:]]; ok {
+		afterSizeSum += result.afterSize
+		loc, ok := imageLocs[result.filename[9:]]
+		if ok {
 			dlLinks[loc-1] = result.fileLink
+			image := database.Image{
+				ImageName:  result.filename,
+				ImageLink:  result.fileLink,
+				BeforeSize: beforeSize[loc-1],
+				AfterSize:  result.afterSize,
+				IpAddress:  c.IP(),
+			}
+			images = append(images, image)
 		}
+	}
+
+	// save into DB
+	if err := hdlr.DB.Create(&images).Error; err != nil { // TODO: do with ASYNQ
+		panic(err)
 	}
 
 	messageBody := fmt.Sprintf(
 		"Image compressed successfully. You saved around %.3f MB",
-		float64((beforeSize-afterSize))/(1024*1024),
+		float64((beforeSizeSum-afterSizeSum))/(1024*1024),
 	)
 
 	// Render index

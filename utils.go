@@ -10,7 +10,7 @@ import (
 )
 
 type ReturnVal struct {
-	afterSize  int64
+	afterSize  uint
 	statusCode int
 	statusMsg  string
 	filename   string
@@ -20,7 +20,7 @@ type ReturnVal struct {
 func ValidateAndProcess(file *multipart.FileHeader, compressionLevel int, returnChan chan ReturnVal) {
 	// restrict file type to only images
 	fileType := file.Header["Content-Type"][0]
-	if (fileType == "image/png" || fileType == "image/jpeg" || fileType == "image/webp") == false {
+	if !(fileType == "image/png" || fileType == "image/jpeg" || fileType == "image/webp") {
 		result := ReturnVal{
 			afterSize:  0,
 			statusCode: 415,
@@ -59,17 +59,14 @@ func ValidateAndProcess(file *multipart.FileHeader, compressionLevel int, return
 		panic(err)
 	}
 
-	// save filename into db
-
 	result := ReturnVal{
-		afterSize:  afterSize,
+		afterSize:  uint(afterSize),
 		statusCode: 201,
 		statusMsg:  "Success!",
 		filename:   filename,
 		fileLink:   fileLink,
 	}
 	returnChan <- result
-	return
 }
 
 func imageCompressing(buffer []byte, quality int, dirname string, orgFilename string) (string, string, int64, error) {
