@@ -1,0 +1,32 @@
+# BASE IMAGE
+FROM golang:1.19-alpine AS builder
+
+ENV GO111MODULE="on"
+ENV GOOS="linux"
+ENV CGO_ENABLED=0
+
+RUN apk update \
+    && apk add --no-cache \
+    build-base \
+    ca-certificates \
+    curl \
+    tzdata \
+    git \
+    && update-ca-certificates
+
+WORKDIR /app
+
+COPY . .
+
+RUN go mod download && go mod verify
+RUN go build -o cleanup
+
+
+# PRODUCTION IMAGE
+FROM alpine:latest as prod
+
+COPY --from=builder ["/app/cleanup", "/"]
+
+EXPOSE 4040
+
+CMD ["./cleanup"]

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Image</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+    <script src="main.js"></script>
+    <style>
+        .main {
+            display: flex;
+            flex-direction: column;
+            margin: 0px 0px 0px 0px;
+            padding: 0px 0px 0px 0px;
+
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+        }
+
+        .form-div {
+            width: 80%;
+            height: 100%;
+            background-color: lightgray;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            justify-items: center;
+            border-radius: 10px;
+            padding: 5px 10px 5px 10px;
+        }
+
+        .form {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            align-items: center;
+        }
+
+        .footer {
+            padding: 0px 10px 0px 10px;
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: darkgrey;
+            border-radius: 10px;
+        }
+
+        body {
+            margin: 0 0 0 0;
+            padding: 0 0 0 0;
+            font-size: medium;
+
+        }
+
+        .btn,
+        .filec,
+        .compr-level {
+            border: 2px solid gray;
+            color: gray;
+            background-color: white;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        @media screen and (max-width: 600px) {
+            .main {
+                display: flex;
+                flex-direction: column;
+                margin: 0px 0px 0px 0px;
+                padding: 0px 0px 0px 0px;
+
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .form {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                height: 100%;
+                align-items: center;
+                padding: 0px 10px 0px 10px !important;
+                background-color: darkgrey;
+            }
+
+            body {
+                width: 100%;
+                height: 100%;
+                margin: 0 0 0 0;
+                padding: 0 0 0 0;
+                font-size: medium;
+            }
+
+            .footer {
+                padding: 0px 10px 0px 10px;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                background-color: darkgrey;
+                border-radius: 7px;
+                font-size: small;
+            }
+
+            .form-div {
+                width: 100%;
+                height: 100%;
+                background-color: lightgray;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-items: center;
+                border-radius: 5px;
+                padding: 0px 10px 0px 10px;
+            }
+        }
+    </style>
+    <script src="https://hcaptcha.com/1/api.js" async defer></script>
+</head>
+
+<body>
+    <div class="main">
+        <div class="form-div">
+            <form class="form" method="post" enctype="multipart/form-data" id="form" action="/">
+                <h2>You can compress up to 5 images with mixumum size of 20 MB each!</h2>
+                {{if .message}}
+                <h4>{{.message}} -> <a href="http://127.0.0.1:8080/">Refresh!</a></h4>
+                <h5>Compressed files will be deleted from the system in every 5 minutes!</h3>
+                    {{end}}
+                    <div>
+                        <label>Upload Images</label>
+                        <div style="display:flex; flex-direction: column;">
+                            <div>
+                                <input class="filec" type="file" name="image1"
+                                    accept="image/png,image/webp,image/jpeg,image/jpg">
+                                {{if .hasLink1}}-><a href={{.DownloadLink1}} download>Download</a>{{end}}
+                            </div>
+                            <div><input class="filec" type="file" name="image2"
+                                    accept="image/png,image/webp,image/jpeg,image/jpg">
+                                {{if .hasLink2}}-><a href={{.DownloadLink2}} download>Download</a>{{end}}
+                            </div>
+                            <div><input class="filec" type="file" name="image3"
+                                    accept="image/png,image/webp,image/jpeg,image/jpg">
+                                {{if .hasLink3}}-><a href={{.DownloadLink3}} download>Download</a>{{end}}
+                            </div>
+                            <div><input class="filec" type="file" name="image4"
+                                    accept="image/png,image/webp,image/jpeg,image/jpg">
+                                {{if .hasLink4}}-><a href={{.DownloadLink4}} download>Download</a>{{end}}
+                            </div>
+                            <div><input class="filec" type="file" name="image5"
+                                    accept="image/png,image/webp,image/jpeg,image/jpg">
+                                {{if .hasLink5}}-><a href={{.DownloadLink5}} download>Download</a>{{end}}
+                            </div>
+                        </div>
+                        <div>
+                            <label for="compr-level">Choose a compression level:</label>
+                            <select class="compr-level" id="compr-level" name="compr-level">
+                                <option value="20" selected>High: 80%</option>
+                                <option value="50">Moderate: 50%</option>
+                                <option value="80">Low: 20%</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="h-captcha" data-sitekey="843fc47d-522f-45d7-a5d0-2da799ee81df"></div>
+                        <button type="submit" name="upload" value="upload" id="upload" class="btn">Compress</button>
+                    </div>
+            </form>
+        </div>
+        <div class="footer">
+            <h3>We Use Middle-Out Compression Algorithm ;)</h3>
+            <h2><a href="https://www.protonlabs.dev">ProtonLabs</a></h2>
+        </div>
+    </div>
+</body>
+
+</html>

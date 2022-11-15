@@ -1,0 +1,37 @@
+# BASE IMAGE
+FROM golang:1.19-alpine AS base
+
+RUN apk update \
+    && apk add --no-cache \
+    build-base \
+    ca-certificates \
+    curl \
+    tzdata \
+    git \
+    && update-ca-certificates
+
+
+# BUILDER IMAGE
+FROM base AS builder
+
+ENV GO111MODULE="on"
+ENV GOOS="linux"
+ENV CGO_ENABLED=0
+
+WORKDIR /app
+
+COPY . .
+
+RUN go mod download && go mod verify
+RUN go build -o producer
+
+
+# PRODUCTION IMAGE
+FROM alpine:latest as prod
+
+COPY ./static ./static
+COPY --from=builder ["/app/producer", "/"]
+
+EXPOSE 8080
+
+CMD ["./producer"]

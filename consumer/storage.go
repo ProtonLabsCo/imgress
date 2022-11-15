@@ -2,22 +2,16 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/joho/godotenv"
 )
 
-func UploadToWasabiS3(compressedBuffer []byte, filename string) (string, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return "", err
-	}
-
+func UploadToWasabiS3(compressedBuffer []byte, filename string) {
 	s3Endpoint := os.Getenv("WASABI_S3_ENDPOINT")
 	s3Region := os.Getenv("WASABI_REGION")
 	s3BucketName := os.Getenv("WASABI_BUCKET_NAME")
@@ -36,11 +30,9 @@ func UploadToWasabiS3(compressedBuffer []byte, filename string) (string, error) 
 	goSession, err := session.NewSessionWithOptions(session.Options{
 		Config: s3Config,
 	})
-
-	// check if the session was created correctly.
 	if err != nil {
-		fmt.Println(err)
-		return "", err
+		log.Println(err)
+		// TODO: STOP PROCESS OR SEND FAILURE MESSAGE
 	}
 
 	// create a s3 client session
@@ -56,10 +48,7 @@ func UploadToWasabiS3(compressedBuffer []byte, filename string) (string, error) 
 	// upload file
 	_, err = s3Client.PutObject(putObjectInput)
 	if err != nil {
-		fmt.Println(err)
-		return "", err
+		log.Println(err)
+		// TODO: STOP PROCESS OR SEND FAILURE MESSAGE
 	}
-
-	linkToS3 := s3Endpoint + "/" + s3BucketName + "/" + filename
-	return linkToS3, err
 }

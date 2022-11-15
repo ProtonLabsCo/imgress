@@ -15,7 +15,7 @@
 # vendor/
 tmp/
 
-.env
+*.env
 
 .DS_Store
 TODO.md

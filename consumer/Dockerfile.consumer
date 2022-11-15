@@ -1,0 +1,35 @@
+# BASE IMAGE
+FROM golang:1.19-alpine AS builder
+
+ENV GO111MODULE="on"
+ENV GOOS="linux"
+ENV CGO_ENABLED=1
+ENV VIPSHOME="/usr/local"
+
+WORKDIR /app
+
+RUN apk update \
+    && apk add --no-cache \
+    build-base \
+    ca-certificates \
+    curl \
+    tzdata \
+    git \
+    vips-dev \
+    && update-ca-certificates
+
+COPY . .
+
+RUN go mod download && go mod verify
+RUN go build -o consumer
+
+
+# PRODUCTION IMAGE
+FROM alpine:latest as prod
+
+RUN apk add --no-cache vips
+COPY --from=builder /app/consumer /usr/local/bin/consumer
+
+EXPOSE 5050
+
+ENTRYPOINT ["/usr/local/bin/consumer"]

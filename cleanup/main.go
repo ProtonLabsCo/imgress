@@ -2,18 +2,21 @@ package main
 
 import (
 	"fmt"
-	"imgress/database"
+	"log"
 	"os"
 	"time"
+
+	"imgress-cleanup/database"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/joho/godotenv"
 )
 
-func CleanUp() {
+func main() {
+	database.ConnectDB()
+
 	// select links from db undeleted images older than 5mins
 	var images []database.Image
 
@@ -25,6 +28,7 @@ func CleanUp() {
 			// update db row as deleted
 			database.GDB.Model(&image).Update("is_deleted", true)
 		}
+		log.Printf("Cleanup: Deleted %d images", len(images))
 
 		// check for 5-minutes-old files in every one minute
 		time.Sleep(60 * time.Second)
@@ -32,11 +36,6 @@ func CleanUp() {
 }
 
 func deleteFromWasabiS3(filename string) error {
-	err := godotenv.Load()
-	if err != nil {
-		return err
-	}
-
 	s3Endpoint := os.Getenv("WASABI_S3_ENDPOINT")
 	s3Region := os.Getenv("WASABI_REGION")
 	s3BucketName := os.Getenv("WASABI_BUCKET_NAME")

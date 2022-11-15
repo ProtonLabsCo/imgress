@@ -1,0 +1,54 @@
+package main
+
+import (
+	"io"
+	"log"
+	"mime/multipart"
+
+	"imgress-producer/messageq"
+
+	rabbitmq "github.com/rabbitmq/amqp091-go"
+)
+
+func ValidateAndPublish(files []*multipart.FileHeader, compressionLevel int, queueName string, RMQConn *rabbitmq.Connection) (int, string, []uint, uint) {
+	RMQChan, err := RMQConn.Channel()
+	if err != nil {
+		return 500, "Internal error.", nil, 0
+	}
+	defer RMQChan.Close()
+
+	beforeSize := []uint{0, 0, 0, 0, 0}
+	var beforeSizeSum uint = 0
+	for i, file := range files {
+		beforeSize[i] = uint(file.Size)
+		beforeSizeSum += uint(file.Size)
+
+		// restrict file type to only images
+		fileType := file.Header["Content-Type"][0]
+		if !(fileType == "image/png" || fileType == "image/jpeg" || fileType == "image/webp") {
+			return 415, "Stop! You can upload only images.", beforeSize, beforeSizeSum
+		}
+
+		// restrict single file size to 20MB
+		if file.Size/(1024*1024) > 20 {
+			return 413, "Stop! Maximum 20MB of image is allowed.", beforeSize, beforeSizeSum
+		}
+
+		filePtr, err := file.Open()
+		if err != nil {
+			log.Println(err)
+		}
+		defer filePtr.Close()
+
+		buffer, err := io.ReadAll(filePtr)
+		if err != nil {
+			log.Println(err)
+		}
+
+		err = messageq.SendToQueue(buffer, compressionLevel, file.Filename, queueName, RMQChan)
+		if err != nil {
+			return 500, "Internal error.", beforeSize, beforeSizeSum
+		}
+	}
+	return 201, "Success!", beforeSize, beforeSizeSum
+}
