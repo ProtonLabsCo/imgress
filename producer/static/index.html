@@ -6,8 +6,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>Image</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
-    <script src="main.js"></script>
     <style>
         .main {
             display: flex;
@@ -123,6 +121,32 @@
         }
     </style>
     <script src="https://hcaptcha.com/1/api.js" async defer></script>
+    <script type="text/javascript">
+        const ext = ['.jpg', '.jpeg', '.png', '.webp'];
+
+        function ValidateFiles() {
+            var validated_msg = document.getElementById("validated_msg");
+            validated_msg.innerHTML = "<h3>All images are validated and uploaded! Wait for a moment...</h3>";
+        }
+
+        function ValidateSingleInput(id) {
+            var upl = document.getElementById("image"+id.toString());
+            if(upl.files[0]) {
+                if (!(ext.some(el => upl.files[0].name.endsWith(el)))) {
+                    alert("You can upload only image files: " + upl.files[0].name);
+                    upl.value = "";
+                    return false;
+                }
+                if (upl.files[0].size > 20000000) { // max: 20MB
+                    alert("Images can not be more than 20MB: " + upl.files[0].name);
+                    upl.value = "";
+                    return false;
+                }
+                return true;
+            }
+            return false;
+        }
+    </script>
 </head>
 
 <body>
@@ -131,47 +155,52 @@
             <form class="form" method="post" enctype="multipart/form-data" id="form" action="/">
                 <h2>You can compress up to 5 images with mixumum size of 20 MB each!</h2>
                 {{if .message}}
-                <h4>{{.message}} -> <a href="http://127.0.0.1:8080/">Refresh!</a></h4>
-                <h5>Compressed files will be deleted from the system in every 5 minutes!</h3>
-                    {{end}}
-                    <div>
-                        <label>Upload Images</label>
-                        <div style="display:flex; flex-direction: column;">
-                            <div>
-                                <input class="filec" type="file" name="image1"
-                                    accept="image/png,image/webp,image/jpeg,image/jpg">
-                                {{if .hasLink1}}-><a href={{.DownloadLink1}} download>Download</a>{{end}}
-                            </div>
-                            <div><input class="filec" type="file" name="image2"
-                                    accept="image/png,image/webp,image/jpeg,image/jpg">
-                                {{if .hasLink2}}-><a href={{.DownloadLink2}} download>Download</a>{{end}}
-                            </div>
-                            <div><input class="filec" type="file" name="image3"
-                                    accept="image/png,image/webp,image/jpeg,image/jpg">
-                                {{if .hasLink3}}-><a href={{.DownloadLink3}} download>Download</a>{{end}}
-                            </div>
-                            <div><input class="filec" type="file" name="image4"
-                                    accept="image/png,image/webp,image/jpeg,image/jpg">
-                                {{if .hasLink4}}-><a href={{.DownloadLink4}} download>Download</a>{{end}}
-                            </div>
-                            <div><input class="filec" type="file" name="image5"
-                                    accept="image/png,image/webp,image/jpeg,image/jpg">
-                                {{if .hasLink5}}-><a href={{.DownloadLink5}} download>Download</a>{{end}}
-                            </div>
+                    <h4>{{.message}} -> <a href="http://127.0.0.1:8080/">Refresh!</a></h4>
+                    <h5>Compressed files will be deleted from the system in every 5 minutes!</h3>
+                {{end}}
+                <div id="validated_msg"></div>
+                <div>
+                    <label>Upload Images</label>
+                    <div style="display:flex; flex-direction: column;">
+                        <div>
+                            <input class="filec" type="file" name="image1" id="image1" onchange="return ValidateSingleInput(1);"
+                                accept="image/png,image/webp,image/jpeg,image/jpg">
+                            {{if .hasLink1}}-><a href={{.DownloadLink1}} download>Download</a>{{end}}
                         </div>
                         <div>
-                            <label for="compr-level">Choose a compression level:</label>
-                            <select class="compr-level" id="compr-level" name="compr-level">
-                                <option value="20" selected>High: 80%</option>
-                                <option value="50">Moderate: 50%</option>
-                                <option value="80">Low: 20%</option>
-                            </select>
+                            <input class="filec" type="file" name="image2" id="image2" onchange="return ValidateSingleInput(2);"
+                                accept="image/png,image/webp,image/jpeg,image/jpg">
+                            {{if .hasLink2}}-><a href={{.DownloadLink2}} download>Download</a>{{end}}
+                        </div>
+                        <div>
+                            <input class="filec" type="file" name="image3" id="image3" onchange="return ValidateSingleInput(3);"
+                                accept="image/png,image/webp,image/jpeg,image/jpg">
+                            {{if .hasLink3}}-><a href={{.DownloadLink3}} download>Download</a>{{end}}
+                        </div>
+                        <div>
+                            <input class="filec" type="file" name="image4" id="image4" onchange="return ValidateSingleInput(4);"
+                                accept="image/png,image/webp,image/jpeg,image/jpg">
+                            {{if .hasLink4}}-><a href={{.DownloadLink4}} download>Download</a>{{end}}
+                        </div>
+                        <div>
+                            <input class="filec" type="file" name="image5" id="image5" onchange="return ValidateSingleInput(5);"
+                                accept="image/png,image/webp,image/jpeg,image/jpg">
+                            {{if .hasLink5}}-><a href={{.DownloadLink5}} download>Download</a>{{end}}
                         </div>
                     </div>
                     <div>
-                        <div class="h-captcha" data-sitekey="843fc47d-522f-45d7-a5d0-2da799ee81df"></div>
-                        <button type="submit" name="upload" value="upload" id="upload" class="btn">Compress</button>
+                        <label for="compr-level">Choose a compression level:</label>
+                        <select class="compr-level" id="compr-level" name="compr-level">
+                            <option value="20" selected>High: 80%</option>
+                            <option value="50">Moderate: 50%</option>
+                            <option value="80">Low: 20%</option>
+                        </select>
                     </div>
+                </div>
+                <div>
+                    <div class="h-captcha" data-sitekey="843fc47d-522f-45d7-a5d0-2da799ee81df"></div>
+                    <button type="submit" name="upload" value="upload" id="upload" class="btn" onclick="ValidateFiles()">Compress</button>
+                </div>
             </form>
         </div>
         <div class="footer">

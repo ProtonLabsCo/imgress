@@ -60,19 +60,18 @@ func main() {
 func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
 	if err != nil {
-		return err
+		return c.Render("index", fiber.Map{"message": err})
 	}
 
 	hcaptchaPass := HandleCaptcha(form.Value["h-captcha-response"][0])
 	if !hcaptchaPass {
-		// TODO: dont return, instead render on errors
-		return c.JSON(fiber.Map{"status": 403, "message": "Please, solve hCaptcha puzzle!"})
+		return c.Render("index", fiber.Map{"message": "Please, solve hCaptcha puzzle!"})
 	}
 
 	levels := form.Value["compr-level"][0]
 	compressionLevel, err := strconv.Atoi(levels) // check if it is in (20, 50, 80)
 	if err != nil {
-		return err
+		return c.Render("index", fiber.Map{"message": err})
 	}
 
 	imageLocs := make(map[string]int)
@@ -90,17 +89,10 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 	uuid_str := strings.Replace(uuid.New().String(), "-", "", -1)
 	queueName := uuid_str[len(uuid_str)-8:]
 
-	sttsCode, sttsMsg, beforeSize, _ := ValidateAndPublish(files, compressionLevel, queueName, hndlr.RMQConn)
+	sttsCode, sttsMsg, beforeSize, beforeSizeSum := ValidateAndPublish(files, compressionLevel, queueName, hndlr.RMQConn)
 	if sttsCode != 201 {
-		return c.JSON(fiber.Map{"status": sttsCode, "message": sttsMsg})
+		return c.Render("index", fiber.Map{"message": sttsMsg})
 	}
-	// else {
-	// 	// TODO: SEND THIS VIA WEBSOCKET
-	// 	return c.JSON(fiber.Map{
-	// 		"status":  201,
-	// 		"message": "All Images Uploaded, Wait Until Compressed",
-	// 	})
-	// }
 
 	// PART-2: Start Consumer..
 	var afterSizeSum uint = 0
@@ -123,7 +115,6 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 			}
 			images = append(images, image)
 		}
-		// TODO: SEND LINK VIA WEBSOCKET
 	}
 
 	// save into DB
@@ -132,27 +123,23 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 		log.Println("Producer: Error while saving into DB: ", err)
 	}
 
-	// messageBody := fmt.Sprintf(
-	// 	"Image compressed successfully. You saved around %.3f MB",
-	// 	float64((beforeSizeSum-afterSizeSum))/(1024*1024),
-	// )
+	messageBody := fmt.Sprintf(
+		"Image compressed successfully. You saved around %.3f MB",
+		float64((beforeSizeSum-afterSizeSum))/(1024*1024),
+	)
 
-	// // Render index
-	// return c.Render("index", fiber.Map{
-	// 	"message":       messageBody,
-	// 	"hasLink1":      len(dlLinks[0]) > 0,
-	// 	"hasLink2":      len(dlLinks[1]) > 0,
-	// 	"hasLink3":      len(dlLinks[2]) > 0,
-	// 	"hasLink4":      len(dlLinks[3]) > 0,
-	// 	"hasLink5":      len(dlLinks[4]) > 0,
-	// 	"DownloadLink1": dlLinks[0],
-	// 	"DownloadLink2": dlLinks[1],
-	// 	"DownloadLink3": dlLinks[2],
-	// 	"DownloadLink4": dlLinks[3],
-	// 	"DownloadLink5": dlLinks[4],
-	// })
-	return c.JSON(fiber.Map{
-		"status":  201,
-		"message": "All Images Uploaded, Wait Until Compressed",
+	// Render index
+	return c.Render("index", fiber.Map{
+		"message":       messageBody,
+		"hasLink1":      len(dlLinks[0]) > 0,
+		"hasLink2":      len(dlLinks[1]) > 0,
+		"hasLink3":      len(dlLinks[2]) > 0,
+		"hasLink4":      len(dlLinks[3]) > 0,
+		"hasLink5":      len(dlLinks[4]) > 0,
+		"DownloadLink1": dlLinks[0],
+		"DownloadLink2": dlLinks[1],
+		"DownloadLink3": dlLinks[2],
+		"DownloadLink4": dlLinks[3],
+		"DownloadLink5": dlLinks[4],
 	})
 }
