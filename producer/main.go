@@ -14,19 +14,20 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/template/html"
 	"github.com/google/uuid"
-	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"gorm.io/gorm"
 )
 
 type custom_handler struct {
-	DB      *gorm.DB
-	RMQConn *rabbitmq.Connection
+	DB        *gorm.DB
+	RMQPubCl  *messageq.RMQPubClient
+	RMQConsCl *messageq.RMQConsClient
 }
 
-func newHandler(db *gorm.DB, conn *rabbitmq.Connection) custom_handler {
+func newHandler(db *gorm.DB, pubc *messageq.RMQPubClient, consc *messageq.RMQConsClient) custom_handler {
 	return custom_handler{
-		DB:      db,
-		RMQConn: conn,
+		DB:        db,
+		RMQPubCl:  pubc,
+		RMQConsCl: consc,
 	}
 }
 
@@ -34,10 +35,24 @@ func main() {
 	database.ConnectDB()
 	database.GDB.AutoMigrate(&database.Image{})
 
-	messageq.ConnectMQ()
-	defer messageq.RMQConn.Close()
+	pubClient := messageq.NewPublisher()
+	consClient := messageq.NewConsumer()
 
-	hndlr := newHandler(database.GDB, messageq.RMQConn)
+	if err := pubClient.Connect(); err != nil {
+		log.Println(err)
+	}
+	go pubClient.Publisher()
+	defer pubClient.Chan.Close()
+	defer pubClient.Conn.Close()
+
+	if err := consClient.Connect(); err != nil {
+		log.Println(err)
+	}
+	go consClient.Consumer()
+	defer consClient.Chan.Close()
+	defer consClient.Conn.Close()
+
+	hndlr := newHandler(database.GDB, pubClient, consClient)
 
 	engine := html.New("./static", ".html")
 
@@ -87,21 +102,30 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 
 	// Validate and send each image separately
 	uuid_str := strings.Replace(uuid.New().String(), "-", "", -1)
-	queueName := uuid_str[len(uuid_str)-8:]
+	respQueueName := uuid_str[len(uuid_str)-8:]
 
-	sttsCode, sttsMsg, beforeSize, beforeSizeSum := ValidateAndPublish(files, compressionLevel, queueName, hndlr.RMQConn)
+	sttsCode, sttsMsg, beforeSize, beforeSizeSum := ValidateAndPublish(files, compressionLevel, respQueueName, hndlr.RMQPubCl)
 	if sttsCode != 201 {
 		return c.Render("index", fiber.Map{"message": sttsMsg})
 	}
 
 	// PART-2: Start Consumer..
-	var afterSizeSum uint = 0
-	confirmations := messageq.WaitForConfirm(len(files), queueName, hndlr.RMQConn)
+	hndlr.RMQConsCl.ConfData <- messageq.ConfirmExpected{len(files), respQueueName}
+	var confirmations []messageq.ConfirmMsgBody
+	completed := false
+	for !completed {
+		select {
+		case confirmations = <-hndlr.RMQConsCl.ConfMsgs:
+			completed = true
+		default:
+			// Do nothing
+		}
+	}
 
+	var afterSizeSum uint = 0
 	dlLinks := []string{"", "", "", "", ""}
 	var images []database.Image
 	for _, resultConf := range confirmations {
-
 		afterSizeSum += resultConf.AfterSize
 		loc, ok := imageLocs[resultConf.Filename[9:]]
 		if ok {

@@ -6,17 +6,9 @@ import (
 	"mime/multipart"
 
 	"imgress-producer/messageq"
-
-	rabbitmq "github.com/rabbitmq/amqp091-go"
 )
 
-func ValidateAndPublish(files []*multipart.FileHeader, compressionLevel int, queueName string, RMQConn *rabbitmq.Connection) (int, string, []uint, uint) {
-	RMQChan, err := RMQConn.Channel()
-	if err != nil {
-		return 500, "Internal error.", nil, 0
-	}
-	defer RMQChan.Close()
-
+func ValidateAndPublish(files []*multipart.FileHeader, compressionLevel int, respQueueName string, pubCl *messageq.RMQPubClient) (int, string, []uint, uint) {
 	beforeSize := []uint{0, 0, 0, 0, 0}
 	var beforeSizeSum uint = 0
 	for i, file := range files {
@@ -45,10 +37,14 @@ func ValidateAndPublish(files []*multipart.FileHeader, compressionLevel int, que
 			log.Println(err)
 		}
 
-		err = messageq.SendToQueue(buffer, compressionLevel, file.Filename, queueName, RMQChan)
-		if err != nil {
-			return 500, "Internal error.", beforeSize, beforeSizeSum
+		rawMsgBody := messageq.CompressMsgBody{
+			ImageBuffer:      buffer,
+			ImageName:        file.Filename,
+			CompressionLevel: compressionLevel,
+			RespQueueName:    respQueueName,
 		}
+
+		pubCl.Msg <- rawMsgBody
 	}
 	return 201, "Success!", beforeSize, beforeSizeSum
 }
