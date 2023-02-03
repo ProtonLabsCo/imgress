@@ -16,7 +16,7 @@ services:
     networks:
       - imgress-network-db
       - imgress-network-mq
-    command: sh -c 'while ! nc -z imgress-db 5432; do sleep 1; done; ./producer'
+    command: sh -c 'while ! nc -z imgress-db 7432; do sleep 1; done; ./producer'
 
   imgress-cleanup:
     build:
@@ -31,7 +31,7 @@ services:
       - imgress-producer
     networks:
       - imgress-network-db
-    command: sh -c 'while ! nc -z imgress-db 5432; do sleep 1; done; ./cleanup'
+    command: sh -c 'while ! nc -z imgress-db 7432; do sleep 1; done; ./cleanup'
 
   imgress-consumer:
     build:
@@ -54,7 +54,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - 7432:7432
     networks:
       - imgress-network-db
     restart: always
