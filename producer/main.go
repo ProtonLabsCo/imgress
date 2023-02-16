@@ -38,16 +38,12 @@ func main() {
 	pubClient := messageq.NewPublisher()
 	consClient := messageq.NewConsumer()
 
-	if err := pubClient.Connect(); err != nil {
-		log.Println(err)
-	}
+	pubClient.Connect()
 	go pubClient.Publisher()
 	defer pubClient.Chan.Close()
 	defer pubClient.Conn.Close()
 
-	if err := consClient.Connect(); err != nil {
-		log.Println(err)
-	}
+	consClient.Connect()
 	go consClient.Consumer()
 	defer consClient.Chan.Close()
 	defer consClient.Conn.Close()

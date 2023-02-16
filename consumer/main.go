@@ -76,17 +76,13 @@ func startConsumer(consClient *messageq.RMQConsClient, pubClient *messageq.RMQPu
 
 func main() {
 	pubClient := messageq.NewPublisher()
-	if err := pubClient.Connect(); err != nil {
-		log.Println(err)
-	}
+	pubClient.Connect()
 	go pubClient.StartPublisher()
 	defer pubClient.Chan.Close()
 	defer pubClient.Conn.Close()
 
 	consClient := messageq.NewConsumer()
-	if err := consClient.Connect(); err != nil {
-		log.Println(err)
-	}
+	consClient.Connect()
 	defer consClient.Chan.Close()
 	defer consClient.Conn.Close()
 	startConsumer(consClient, pubClient)

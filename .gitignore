@@ -19,3 +19,6 @@ tmp/
 
 .DS_Store
 TODO.md
+
+# infra
+*-secret.yaml

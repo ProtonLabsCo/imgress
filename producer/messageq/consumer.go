@@ -50,7 +50,8 @@ func (consCl *RMQConsClient) Connect() error {
 		time.Sleep(10 * time.Second)
 	}
 	if err != nil {
-		return fmt.Errorf("error in creating rabbitmq connection with %s : %s", amqpServerURL, err.Error())
+		errS := fmt.Errorf("error in creating RabbitMQ connection with %s : %s", amqpServerURL, err.Error())
+		log.Fatalln(errS)
 	} else {
 		log.Println("Producer: succesfully connected to RabbitMQ!")
 	}
@@ -61,7 +62,8 @@ func (consCl *RMQConsClient) Connect() error {
 	}()
 	consCl.Chan, err = consCl.Conn.Channel()
 	if err != nil {
-		return fmt.Errorf("channel: %s", err)
+		errS := fmt.Errorf("error creating a RabbitMQ channel: %s", err)
+		log.Fatalln(errS)
 	}
 	return nil
 }

@@ -43,8 +43,7 @@ func ConnectDB() {
 
 	GDB, err = gorm.Open(postgres.Open(configData), &gorm.Config{})
 	if err != nil {
-		log.Println("Cleanup: Error Connecting to Database")
-		return
+		log.Fatalln("Cleanup: Error Connecting to Database") // let it fail
 	}
 	log.Println("Cleanup: Connection Opened to Database")
 }
