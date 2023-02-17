@@ -91,6 +91,11 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 		frmField := fmt.Sprintf("image%d", i)
 		file := form.File[frmField]
 		if len(file) > 0 {
+			orgFilename := file[0].Filename
+			uuidStr := strings.Replace(uuid.New().String(), "-", "", -1)
+			uniqueFilename := uuidStr[len(uuidStr)-8:] + "_" + orgFilename
+			file[0].Filename = uniqueFilename
+
 			imageLocs[file[0].Filename] = i
 			files = append(files, file[0])
 		}
@@ -123,7 +128,7 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 	var images []database.Image
 	for _, resultConf := range confirmations {
 		afterSizeSum += resultConf.AfterSize
-		loc, ok := imageLocs[resultConf.Filename[9:]]
+		loc, ok := imageLocs[resultConf.Filename]
 		if ok {
 			dlLinks[loc-1] = resultConf.FileLink
 			image := database.Image{

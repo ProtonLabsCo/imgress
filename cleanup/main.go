@@ -38,7 +38,7 @@ func main() {
 func deleteFromWasabiS3(filename string) error {
 	s3Endpoint := os.Getenv("WASABI_S3_ENDPOINT")
 	s3Region := os.Getenv("WASABI_REGION")
-	s3BucketName := os.Getenv("WASABI_BUCKET_NAME")
+	s3BucketNameCompressed := os.Getenv("WASABI_COMPRESSED_BUCKET_NAME")
 	s3AccessKey := os.Getenv("WASABI_ACCESS_KEY")
 	s3SecretKey := os.Getenv("WASABI_SECRET_KEY")
 
@@ -65,7 +65,7 @@ func deleteFromWasabiS3(filename string) error {
 
 	// create put object input
 	deleteObjectInput := &s3.DeleteObjectInput{
-		Bucket: aws.String(s3BucketName),
+		Bucket: aws.String(s3BucketNameCompressed),
 		Key:    aws.String(filename),
 	}
 	// get file

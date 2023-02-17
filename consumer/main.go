@@ -4,28 +4,23 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"strings"
 
 	"imgress-consumer/messageq"
-
-	"github.com/google/uuid"
 )
 
 var S3Endpoint = os.Getenv("WASABI_S3_ENDPOINT")
 var S3Region = os.Getenv("WASABI_REGION")
-var S3BucketName = os.Getenv("WASABI_BUCKET_NAME")
+var S3BucketNameCompressed = os.Getenv("WASABI_COMPRESSED_BUCKET_NAME")
 var S3AccessKey = os.Getenv("WASABI_ACCESS_KEY")
 var S3SecretKey = os.Getenv("WASABI_SECRET_KEY")
 
 func handleConsumedMsg(messageBody messageq.CompressMsgBody, pubClient *messageq.RMQPubClient) {
 	compressed := ImageCompressing(messageBody)
 
-	orgFilename := messageBody.ImageName
-	uuidStr := strings.Replace(uuid.New().String(), "-", "", -1)
-	uniqueFilename := uuidStr[len(uuidStr)-8:] + "_" + orgFilename
-	// go UploadToWasabiS3(compressed, uniqueFilename) // TODO: uncomment once paid
+	uniqueFilename := messageBody.ImageName
+	UploadToWasabiS3(compressed, uniqueFilename) // should it be called concurrently?
 
-	filelink := S3Endpoint + "/" + S3BucketName + "/" + uniqueFilename
+	filelink := S3Endpoint + "/" + S3BucketNameCompressed + "/" + uniqueFilename
 	confMsg := messageq.ChanConfirmMsgBody{
 		Filename:      uniqueFilename,
 		FileLink:      filelink,

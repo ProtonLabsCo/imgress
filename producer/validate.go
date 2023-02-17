@@ -37,8 +37,10 @@ func ValidateAndPublish(files []*multipart.FileHeader, compressionLevel int, res
 			log.Println(err)
 		}
 
+		// Upload uncompressed image to Wasabi with unique name
+		UploadToWasabiS3(buffer, file.Filename)
+
 		rawMsgBody := messageq.CompressMsgBody{
-			ImageBuffer:      buffer,
 			ImageName:        file.Filename,
 			CompressionLevel: compressionLevel,
 			RespQueueName:    respQueueName,

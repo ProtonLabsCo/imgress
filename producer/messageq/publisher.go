@@ -13,7 +13,6 @@ import (
 )
 
 type CompressMsgBody struct {
-	ImageBuffer      []byte
 	ImageName        string
 	CompressionLevel int
 	RespQueueName    string
