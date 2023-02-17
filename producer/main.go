@@ -137,11 +137,12 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 		}
 	}
 
-	// save into DB
-	// TODO: DO WITH ASYNQ, USER SHOULDNT CARE ABOUT DB
-	if err := hndlr.DB.Create(&images).Error; err != nil {
-		log.Println("Producer: Error while saving into DB: ", err)
-	}
+	// save into DB (user should not wait for db save)
+	go func() {
+		if err := hndlr.DB.Create(&images).Error; err != nil {
+			log.Println("Producer: Error while saving into DB: ", err)
+		}
+	}()
 
 	messageBody := fmt.Sprintf(
 		"Image compressed successfully. You saved around %.3f MB",
