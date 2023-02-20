@@ -85,7 +85,7 @@ func (pubCl *RMQPubClient) Publisher() {
 				pubCl.Connect() // Reconnect
 			}
 		case msg := <-pubCl.Msg:
-			pubCl.SendToQueue(msg)
+			go pubCl.SendToQueue(msg)
 		}
 	}
 }

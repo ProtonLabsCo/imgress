@@ -111,12 +111,14 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 	}
 
 	// PART-2: Start Consumer..
+	hndlr.RMQConsCl.Fanus[respQueueName] = make(chan []messageq.ConfirmMsgBody)
 	hndlr.RMQConsCl.ConfData <- messageq.ConfirmExpected{len(files), respQueueName}
 	var confirmations []messageq.ConfirmMsgBody
 	completed := false
 	for !completed {
 		select {
-		case confirmations = <-hndlr.RMQConsCl.ConfMsgs:
+		case confirmations = <-hndlr.RMQConsCl.Fanus[respQueueName]:
+			log.Println("Producer: confirmation completed!")
 			completed = true
 		default:
 			// Do nothing
@@ -144,13 +146,12 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 			images = append(images, image)
 		}
 	}
+	close(hndlr.RMQConsCl.Fanus[respQueueName])
 
-	// save into DB (user should not wait for db save)
-	go func() {
-		if err := hndlr.DB.Create(&images).Error; err != nil {
-			log.Println("Producer: Error while saving into DB: ", err)
-		}
-	}()
+	// TODO: save into DB async (user should not wait for db save)
+	if err := hndlr.DB.Create(&images).Error; err != nil {
+		log.Println("Producer: Error while saving into DB: ", err)
+	}
 
 	messageBody := fmt.Sprintf(
 		"Image compressed successfully. You saved around %.3f MB",

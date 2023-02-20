@@ -59,45 +59,6 @@ func handleConsumedMsg(messageBody messageq.CompressMsgBody, pubClient *messageq
 	pubClient.ConfMsg <- confMsg
 }
 
-func startConsumer(consClient *messageq.RMQConsClient, pubClient *messageq.RMQPubClient) {
-	messages, err := consClient.Chan.Consume(
-		"compress", // queue name
-		"",         // consumer
-		true,       // auto-ack
-		false,      // exclusive
-		false,      // no local
-		false,      // no wait
-		nil,        // arguments
-	)
-	if err != nil {
-		log.Println("Consumer: ", err)
-		return
-	}
-
-	log.Println("Consumer: Waiting for messages...")
-
-	// Make a channel to receive messages into infinite loop.
-	forever := make(chan bool)
-	go func() {
-		for message := range messages {
-			rawMsgBody := messageq.CompressMsgBody{}
-			err := json.Unmarshal(message.Body, &rawMsgBody)
-			if err != nil {
-				log.Println("Consumer: Error decoding JSON")
-				return
-				// TODO: SOMEHOW NOTIFY PRODUCER ABOUT THE ISSUE OR SEND FAILURE MESSAGE
-			}
-			log.Println("Consumer: Recieved an image with name: ", rawMsgBody.ImageName)
-			// TODO: ERROR HANDLING IN GOROUTINES
-			go handleConsumedMsg(rawMsgBody, pubClient)
-		}
-	}()
-	<-forever
-
-	log.Println("Consumer: Done processing messages")
-	return
-}
-
 func main() {
 	pubClient := messageq.NewPublisher()
 	pubClient.Connect()
@@ -106,20 +67,51 @@ func main() {
 	defer pubClient.Conn.Close()
 
 	consClient := messageq.NewConsumer()
-	consClient.Connect()
-	defer consClient.Chan.Close()
-	defer consClient.Conn.Close()
-	startConsumer(consClient, pubClient)
+	// Start Consuming
 	for {
-		select {
-		case err := <-consClient.Err:
-			if err != nil {
-				log.Println("Consumer: connection lost, now reconnecting...: ", err)
-				consClient.Connect() // Reconnect
+		consClient.Connect()
+
+		messages, err := consClient.Chan.Consume(
+			"compress", // queue name
+			"",         // consumer
+			true,       // auto-ack
+			false,      // exclusive
+			false,      // no local
+			false,      // no wait
+			nil,        // arguments
+		)
+		if err != nil {
+			log.Fatal("Consumer: ", err)
+		}
+		log.Println("Consumer: Waiting for messages...")
+		// Make a channel to receive messages into infinite loop.
+		connected := true
+		for connected { //receive loop
+			select {
+			case err := <-consClient.Err:
+				if err != nil {
+					log.Println("Consumer: connection lost, now reconnecting...: ", err)
+				}
+				connected = false
+				break
+			default:
+				forever := make(chan bool)
+				go func() {
+					for message := range messages {
+						rawMsgBody := messageq.CompressMsgBody{}
+						err := json.Unmarshal(message.Body, &rawMsgBody)
+						if err != nil {
+							log.Println("Consumer: Error decoding JSON")
+							rawMsgBody.ImageName = "error"
+						}
+						log.Println("Consumer: Recieved an image with name: ", rawMsgBody.ImageName)
+						go handleConsumedMsg(rawMsgBody, pubClient)
+					}
+				}()
+				<-forever
 			}
-			startConsumer(consClient, pubClient)
-		default:
-			// do nothing
 		}
 	}
+	consClient.Chan.Close()
+	consClient.Conn.Close()
 }

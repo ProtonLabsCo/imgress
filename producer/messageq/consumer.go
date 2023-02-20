@@ -26,14 +26,14 @@ type RMQConsClient struct {
 	Conn     *rabbitmq.Connection
 	Chan     *rabbitmq.Channel
 	ConfData chan ConfirmExpected
-	ConfMsgs chan []ConfirmMsgBody
+	Fanus    map[string](chan []ConfirmMsgBody)
 	Err      chan error
 }
 
 func NewConsumer() *RMQConsClient {
 	return &RMQConsClient{
 		ConfData: make(chan ConfirmExpected),
-		ConfMsgs: make(chan []ConfirmMsgBody),
+		Fanus:    make(map[string](chan []ConfirmMsgBody)),
 		Err:      make(chan error),
 	}
 }
@@ -77,13 +77,12 @@ func (consCl *RMQConsClient) Consumer() {
 				consCl.Connect() // Reconnect
 			}
 		case confData := <-consCl.ConfData:
-			confirmations := consCl.WaitForConfirm(confData)
-			consCl.ConfMsgs <- confirmations
+			go consCl.WaitForConfirm(confData)
 		}
 	}
 }
 
-func (consCl *RMQConsClient) WaitForConfirm(confData ConfirmExpected) []ConfirmMsgBody {
+func (consCl *RMQConsClient) WaitForConfirm(confData ConfirmExpected) {
 	args := make(rabbitmq.Table)
 	args["x-max-length"] = 5
 	args["x-expires"] = 300000
@@ -126,6 +125,7 @@ func (consCl *RMQConsClient) WaitForConfirm(confData ConfirmExpected) []ConfirmM
 	// Make a channel to receive messages into infinite loop.
 	forever := make(chan bool)
 	go func() {
+		log.Println("Producer: confirmation started!")
 		for message := range messages {
 			rawMsgBody := ConfirmMsgBody{}
 			err := json.Unmarshal(message.Body, &rawMsgBody)
@@ -143,6 +143,5 @@ func (consCl *RMQConsClient) WaitForConfirm(confData ConfirmExpected) []ConfirmM
 		}
 	}()
 	<-forever
-	log.Println("Producer: confirmation completed!")
-	return results
+	consCl.Fanus[confData.QueueName] <- results
 }
