@@ -10,6 +10,10 @@ import (
 
 func ImageCompressing(messageBody messageq.CompressMsgBody) []byte {
 	buffer, err := DownloadFromWasabiS3(messageBody.ImageName)
+	if err != nil {
+		log.Println("Consumer: error downloading raw image: ", err)
+		return nil
+	}
 	quality := messageBody.CompressionLevel
 
 	compressed, err := bimg.NewImage(buffer).Process(bimg.Options{Quality: quality})

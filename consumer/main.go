@@ -15,10 +15,39 @@ var S3AccessKey = os.Getenv("WASABI_ACCESS_KEY")
 var S3SecretKey = os.Getenv("WASABI_SECRET_KEY")
 
 func handleConsumedMsg(messageBody messageq.CompressMsgBody, pubClient *messageq.RMQPubClient) {
+	if messageBody.ImageName == "error" {
+		confMsg := messageq.ChanConfirmMsgBody{
+			Filename:      "error",
+			FileLink:      "not available",
+			AfterSize:     0,
+			RespQueueName: messageBody.RespQueueName,
+		}
+		pubClient.ConfMsg <- confMsg
+		return
+	}
 	compressed := ImageCompressing(messageBody)
+	if compressed == nil {
+		confMsg := messageq.ChanConfirmMsgBody{
+			Filename:      "error",
+			FileLink:      "not available",
+			AfterSize:     0,
+			RespQueueName: messageBody.RespQueueName,
+		}
+		pubClient.ConfMsg <- confMsg
+		return
+	}
 
 	uniqueFilename := messageBody.ImageName
-	UploadToWasabiS3(compressed, uniqueFilename) // should it be called concurrently?
+	if err := UploadToWasabiS3(compressed, uniqueFilename); err != nil { // should it be called concurrently?
+		confMsg := messageq.ChanConfirmMsgBody{
+			Filename:      "error",
+			FileLink:      "not available",
+			AfterSize:     0,
+			RespQueueName: messageBody.RespQueueName,
+		}
+		pubClient.ConfMsg <- confMsg
+		return
+	}
 
 	filelink := S3Endpoint + "/" + S3BucketNameCompressed + "/" + uniqueFilename
 	confMsg := messageq.ChanConfirmMsgBody{

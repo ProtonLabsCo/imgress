@@ -69,7 +69,7 @@ func (pubCl *RMQPubClient) Connect() error {
 	return nil
 }
 
-func (pubCl *RMQPubClient) sendToQueue(confMsg ChanConfirmMsgBody) error {
+func (pubCl *RMQPubClient) sendToQueue(confMsg ChanConfirmMsgBody) {
 	args := make(rabbitmq.Table)
 	args["x-max-length"] = 5
 	args["x-expires"] = 300000
@@ -82,8 +82,8 @@ func (pubCl *RMQPubClient) sendToQueue(confMsg ChanConfirmMsgBody) error {
 		args,                  // arguments
 	)
 	if err != nil {
-		log.Println(err)
-		return err
+		log.Println(err) // ATTENTION: CHECK LOGS FREQUENTLY FOR THIS ONE!!!
+		return
 	}
 
 	rawMsgBody := ConfirmMsgBody{
@@ -94,8 +94,7 @@ func (pubCl *RMQPubClient) sendToQueue(confMsg ChanConfirmMsgBody) error {
 	mqBody, err := json.Marshal(rawMsgBody)
 	if err != nil {
 		log.Println("Consumer: error encoding JSON: ", err)
-		return err
-		// TODO: STOP THE PROCESS OR SEND FAILURE MESSAGE
+		return
 	}
 	// Create a message to publish.
 	message := rabbitmq.Publishing{
@@ -113,11 +112,10 @@ func (pubCl *RMQPubClient) sendToQueue(confMsg ChanConfirmMsgBody) error {
 		false,                 // immediate
 		message,               // message to publish
 	); err != nil {
-		log.Println(err)
-		return err
+		log.Println(err) // ATTENTION: CHECK LOGS FREQUENTLY FOR THIS ONE!!!
+		return
 	}
 	log.Println("Consumer: Successfully published the confirmation message to RabbitMQ")
-	return nil
 }
 
 func (pubCl *RMQPubClient) StartPublisher() {

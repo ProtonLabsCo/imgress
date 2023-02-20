@@ -127,6 +127,9 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 	dlLinks := []string{"", "", "", "", ""}
 	var images []database.Image
 	for _, resultConf := range confirmations {
+		if resultConf.Filename == "error" {
+			return c.Render("index", fiber.Map{"message": "Internal Error."})
+		}
 		afterSizeSum += resultConf.AfterSize
 		loc, ok := imageLocs[resultConf.Filename]
 		if ok {

@@ -17,7 +17,7 @@ var S3BucketNameRawImage = os.Getenv("WASABI_RAWIMAGE_BUCKET_NAME")
 var S3AccessKey = os.Getenv("WASABI_ACCESS_KEY")
 var S3SecretKey = os.Getenv("WASABI_SECRET_KEY")
 
-func UploadToWasabiS3(uncompressedBuffer []byte, filename string) {
+func UploadToWasabiS3(uncompressedBuffer []byte, filename string) error {
 	// create a configuration
 	s3Config := aws.Config{
 		Credentials:      credentials.NewStaticCredentials(S3AccessKey, S3SecretKey, ""),
@@ -32,7 +32,7 @@ func UploadToWasabiS3(uncompressedBuffer []byte, filename string) {
 	})
 	if err != nil {
 		log.Println(err)
-		// TODO: STOP PROCESS OR SEND FAILURE MESSAGE (return 500)
+		return err
 	}
 
 	// create a s3 client session
@@ -49,6 +49,7 @@ func UploadToWasabiS3(uncompressedBuffer []byte, filename string) {
 	_, err = s3Client.PutObject(putObjectInput)
 	if err != nil {
 		log.Println(err)
-		// TODO: STOP PROCESS OR SEND FAILURE MESSAGE (return 500)
+		return err
 	}
+	return nil
 }

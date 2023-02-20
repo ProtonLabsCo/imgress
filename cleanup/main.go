@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -24,9 +23,13 @@ func main() {
 		last5mins := time.Now().Add(-time.Minute * 5)
 		database.GDB.Where("created_at < ? AND is_deleted = false", last5mins).Find(&images)
 		for _, image := range images {
-			deleteFromWasabiS3(image.ImageName)
+			err := deleteFromWasabiS3(image.ImageName)
 			// update db row as deleted
-			database.GDB.Model(&image).Update("is_deleted", true)
+			if err != nil {
+				log.Println(err)
+			} else {
+				database.GDB.Model(&image).Update("is_deleted", true)
+			}
 		}
 		log.Printf("Cleanup: Deleted %d images", len(images))
 
@@ -54,10 +57,8 @@ func deleteFromWasabiS3(filename string) error {
 	goSession, err := session.NewSessionWithOptions(session.Options{
 		Config: s3Config,
 	})
-
-	// check if the session was created correctly.
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// create a s3 client session
@@ -68,14 +69,10 @@ func deleteFromWasabiS3(filename string) error {
 		Bucket: aws.String(s3BucketNameCompressed),
 		Key:    aws.String(filename),
 	}
-	// get file
+	// delete file
 	_, err = s3Client.DeleteObject(deleteObjectInput)
-
-	// print if there is an error
 	if err != nil {
-		fmt.Println(err.Error())
 		return err
 	}
-
 	return nil
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -13,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-func UploadToWasabiS3(compressedBuffer []byte, filename string) {
+func UploadToWasabiS3(compressedBuffer []byte, filename string) error {
 	// create a configuration
 	s3Config := aws.Config{
 		Credentials:      credentials.NewStaticCredentials(S3AccessKey, S3SecretKey, ""),
@@ -28,7 +27,7 @@ func UploadToWasabiS3(compressedBuffer []byte, filename string) {
 	})
 	if err != nil {
 		log.Println(err)
-		// TODO: STOP PROCESS OR SEND FAILURE MESSAGE
+		return err
 	}
 
 	// create a s3 client session
@@ -45,8 +44,9 @@ func UploadToWasabiS3(compressedBuffer []byte, filename string) {
 	_, err = s3Client.PutObject(putObjectInput)
 	if err != nil {
 		log.Println(err)
-		// TODO: STOP PROCESS OR SEND FAILURE MESSAGE
+		return err
 	}
+	return nil
 }
 
 func DownloadFromWasabiS3(filename string) ([]byte, error) {
@@ -64,10 +64,8 @@ func DownloadFromWasabiS3(filename string) ([]byte, error) {
 	goSession, err := session.NewSessionWithOptions(session.Options{
 		Config: s3Config,
 	})
-
-	// check if the session was created correctly.
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
 	// create a s3 client session
@@ -81,13 +79,11 @@ func DownloadFromWasabiS3(filename string) ([]byte, error) {
 	// get file
 	obj, err := s3Client.GetObject(getObjectInput)
 	if err != nil {
-		fmt.Println(err.Error())
 		return nil, err
 	}
 
 	rawBuffer, err := io.ReadAll(obj.Body)
 	if err != nil {
-		fmt.Println(err.Error())
 		return nil, err
 	}
 
@@ -100,7 +96,6 @@ func DownloadFromWasabiS3(filename string) ([]byte, error) {
 	// delete file
 	_, err = s3Client.DeleteObject(deleteObjectInput)
 	if err != nil {
-		fmt.Println(err.Error())
 		return nil, err
 	}
 
