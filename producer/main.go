@@ -14,26 +14,27 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/template/html"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type custom_handler struct {
-	DB        *gorm.DB
+	DBCl      *database.DBClient
 	RMQPubCl  *messageq.RMQPubClient
 	RMQConsCl *messageq.RMQConsClient
 }
 
-func newHandler(db *gorm.DB, pubc *messageq.RMQPubClient, consc *messageq.RMQConsClient) custom_handler {
+func newHandler(dbc *database.DBClient, pubc *messageq.RMQPubClient, consc *messageq.RMQConsClient) custom_handler {
 	return custom_handler{
-		DB:        db,
+		DBCl:      dbc,
 		RMQPubCl:  pubc,
 		RMQConsCl: consc,
 	}
 }
 
 func main() {
-	database.ConnectDB()
-	database.GDB.AutoMigrate(&database.Image{})
+	dbClient := database.NewDBCLient()
+	dbClient.ConnectDB()
+	dbClient.GDB.AutoMigrate(&database.Image{})
+	go dbClient.Savior()
 
 	pubClient := messageq.NewPublisher()
 	consClient := messageq.NewConsumer()
@@ -48,7 +49,7 @@ func main() {
 	defer consClient.Chan.Close()
 	defer consClient.Conn.Close()
 
-	hndlr := newHandler(database.GDB, pubClient, consClient)
+	hndlr := newHandler(dbClient, pubClient, consClient)
 
 	engine := html.New("./static", ".html")
 
@@ -148,10 +149,8 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 	}
 	close(hndlr.RMQConsCl.Fanus[respQueueName])
 
-	// TODO: save into DB async (user should not wait for db save)
-	if err := hndlr.DB.Create(&images).Error; err != nil {
-		log.Println("Producer: Error while saving into DB: ", err)
-	}
+	// save into DB async (user should not wait for db save)
+	hndlr.DBCl.ImageSaver <- images
 
 	messageBody := fmt.Sprintf(
 		"Image compressed successfully. You saved around %.3f MB",
