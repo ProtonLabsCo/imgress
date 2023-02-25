@@ -7,7 +7,7 @@ import (
 )
 
 func HandleCaptcha(responseToken string) bool {
-	secretKey := os.Getenv("HCAPTCHA_SECRET_KEY")
+	secretKey := "0x" + os.Getenv("HCAPTCHA_SECRET_KEY")
 
 	client := hcaptcha.New(secretKey)
 	hcaptchaResp := client.VerifyToken(responseToken)
