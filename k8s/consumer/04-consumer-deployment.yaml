@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: imgress-consumer
+  namespace: consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: imgress-consumer
+  template:
+    metadata:
+      labels:
+        app: imgress-consumer
+    spec:
+      containers:
+        - name: imgress-consumer
+          image: ghcr.io/tmpower/imgress-consumer:latest
+          ports:
+            - containerPort: 5050
+          envFrom:
+            - configMapRef:
+                name: consumer-configmap
+            - secretRef:
+                name: consumer-secret
+      imagePullSecrets:
+        - name: github-creds
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: imgress-consumer
+  namespace: consumer
+spec:
+  ports:
+    - name: http
+      port: 5050
+      targetPort: 5050
+  selector:
+    app: imgress-consumer

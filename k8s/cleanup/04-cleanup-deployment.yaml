@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: imgress-cleanup
+  namespace: cleanup
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: imgress-cleanup
+  template:
+    metadata:
+      labels:
+        app: imgress-cleanup
+    spec:
+      containers:
+        - name: imgress-cleanup
+          image: ghcr.io/tmpower/imgress-cleanup:latest
+          ports:
+            - containerPort: 4040
+          envFrom:
+            - configMapRef:
+                name: cleanup-configmap
+            - secretRef:
+                name: cleanup-secret
+      imagePullSecrets:
+        - name: github-creds
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: imgress-cleanup
+  namespace: cleanup
+spec:
+  ports:
+    - name: http
+      port: 4040
+      targetPort: 4040
+  selector:
+    app: imgress-cleanup

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cleanup-configmap
+  namespace: cleanup
+data:
+  DATABASE_HOST: imgress-db.db
+  DATABASE_PORT: "5432"
+  POSTGRES_DB: imgress
+  POSTGRES_USER: postgres
+  WASABI_COMPRESSED_BUCKET_NAME: compressed
+  WASABI_BUCKET_OWNER: protonlabs.co
+  WASABI_REGION: eu-central-2
+  WASABI_S3_ENDPOINT: https://s3.eu-central-2.wasabisys.com

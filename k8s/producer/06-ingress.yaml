@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-producer
+  namespace: producer
+  annotations:
+    cert-manager.io/issuer: letsencrypt-nginx
+    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+spec:
+  tls:
+    - hosts:
+      - imgress.co
+      - www.imgress.co
+      secretName: letsencrypt-nginx
+  rules:
+    - host: imgress.co
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: imgress-producer
+                port:
+                  number: 80
+  ingressClassName: nginx

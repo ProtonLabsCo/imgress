@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: imgress-producer
+  namespace: producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: imgress-producer
+  template:
+    metadata:
+      labels:
+        app: imgress-producer
+    spec:
+      containers:
+        - name: imgress-producer
+          image: ghcr.io/tmpower/imgress-producer:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: producer-configmap
+            - secretRef:
+                name: producer-secret
+      imagePullSecrets:
+        - name: github-creds
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: imgress-producer
+  namespace: producer
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app: imgress-producer
