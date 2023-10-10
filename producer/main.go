@@ -22,54 +22,15 @@ type custom_handler struct {
 	RMQConsCl *messageq.RMQConsClient
 }
 
-func newHandler(dbc *database.DBClient, pubc *messageq.RMQPubClient, consc *messageq.RMQConsClient) custom_handler {
-	return custom_handler{
+func newHandler(dbc *database.DBClient, pubc *messageq.RMQPubClient, consc *messageq.RMQConsClient) *custom_handler {
+	return &custom_handler{
 		DBCl:      dbc,
 		RMQPubCl:  pubc,
 		RMQConsCl: consc,
 	}
 }
 
-func main() {
-	dbClient := database.NewDBCLient()
-	dbClient.ConnectDB()
-	dbClient.GDB.AutoMigrate(&database.Image{})
-	go dbClient.Savior()
-
-	pubClient := messageq.NewPublisher()
-	consClient := messageq.NewConsumer()
-
-	pubClient.Connect()
-	go pubClient.Publisher()
-	defer pubClient.Chan.Close()
-	defer pubClient.Conn.Close()
-
-	consClient.Connect()
-	go consClient.Consumer()
-	defer consClient.Chan.Close()
-	defer consClient.Conn.Close()
-
-	hndlr := newHandler(dbClient, pubClient, consClient)
-
-	engine := html.New("./static", ".html")
-
-	app := fiber.New(fiber.Config{
-		Views:     engine,
-		BodyLimit: 100 * 1024 * 1024, // this is the default limit of 100MB
-	})
-
-	app.Use(cors.New())
-
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Render("index", fiber.Map{})
-	})
-
-	app.Post("/", hndlr.handleFileupload)
-
-	log.Fatal(app.Listen(":8080"))
-}
-
-func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
+func (hndlr *custom_handler) handleFileupload(c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
 	if err != nil {
 		return c.Render("index", fiber.Map{"message": err})
@@ -171,4 +132,45 @@ func (hndlr custom_handler) handleFileupload(c *fiber.Ctx) error {
 		"DownloadLink4": dlLinks[3],
 		"DownloadLink5": dlLinks[4],
 	})
+}
+
+func setupFiberApp(hndlr *custom_handler) *fiber.App {
+	engine := html.New("./static", ".html")
+	app := fiber.New(fiber.Config{
+		Views:     engine,
+		BodyLimit: 100 * 1024 * 1024, // this is the default limit of 100MB
+	})
+	app.Use(cors.New())
+
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.Render("index", fiber.Map{})
+	})
+	app.Post("/", hndlr.handleFileupload)
+
+	return app
+}
+
+func main() {
+	dbClient := database.NewDBCLient()
+	dbClient.ConnectDB()
+	dbClient.GDB.AutoMigrate(&database.Image{})
+	go dbClient.Savior()
+
+	pubClient := messageq.NewPublisher()
+	consClient := messageq.NewConsumer()
+
+	pubClient.Connect()
+	go pubClient.Publisher()
+	defer pubClient.Chan.Close()
+	defer pubClient.Conn.Close()
+
+	consClient.Connect()
+	go consClient.Consumer()
+	defer consClient.Chan.Close()
+	defer consClient.Conn.Close()
+
+	hndlr := newHandler(dbClient, pubClient, consClient)
+	app := setupFiberApp(hndlr)
+
+	log.Fatal(app.Listen(":8080"))
 }
